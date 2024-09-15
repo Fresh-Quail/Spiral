@@ -3,7 +3,7 @@ require('fs');
 const express = require('express');
 const path = require('path');
 const axios = require('axios');
-const qs = require('querystring')
+const qs = require('querystring');
 const app = express();
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -51,11 +51,11 @@ app.get('/callback', async (req, res) => {
         console.log(`Refresh Token: ${refresh_token}`);
   
         // You can now use the access token to make authenticated requests to the API
-        res.redirect('/playback/#' +
-            qs.stringify({
-                access_token: access_token,
-                refresh_token: refresh_token
-            })
+        res.redirect('/playback' //+
+            // qs.stringify({
+            //     access_token: access_token,
+            //     refresh_token: refresh_token
+            // })
         );
 
     //   res.send('Authorization successful!');
@@ -78,7 +78,7 @@ app.get('/playback', (req, res) => {
       // use the access token to access the Spotify Web API
       axios.get('https://api.spotify.com/v1/me/player', options).then(res => console.log('Response Data:', res.data));
       res.sendFile(path.join(__dirname, 'public', 'player.html'))
-})
+});
 
 app.listen(port, (error) =>{
     if(!error){

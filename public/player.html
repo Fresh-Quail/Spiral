@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Playback Page</title>
@@ -17,8 +15,7 @@
             font-family: Arial, sans-serif;
         }
         .center-container {
-            border-width: 5px;
-            border:#1DB954;
+            border: 5px solid blue;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -26,8 +23,7 @@
             height: 100vh;
         }
         .song-img {
-            border-width: 5px;
-            border:#1DB954;
+            border: 5px solid#1DB954;
             width: 300px;
             height: 300px;
             object-fit: cover;
@@ -35,28 +31,26 @@
             margin-bottom: 20px;
         }
         .song-info {
-            border-width: 5px;
-            border: #FAF;
+            border: 5px solid #FAF;
             text-align: center;
             margin-bottom: 20px;
         }
         .playback-bar {
-            border: #FAF;
-            width: 80%;
+            /* border: 5px solid #FAF; */
+            width: 70%;
             height: 5px;
             background-color: #555;
             margin-bottom: 30px;
             position: relative;
         }
         .progress {
-            border-width: 5px;
-            border: #FAF;
+            /* border: 5px solid red; */
             height: 100%;
             background-color: #1DB954;
             width: 50%; /* dynamically change based on current playback time */
         }
         .recently-skipped {
-            border: #FAF;
+            border: 5px solid #FAF;
             position: absolute;
             bottom: 20px;
             right: 20px;
@@ -67,15 +61,13 @@
             text-align: center;
         }
         .recently-skipped img {
-            border-width: 5px;
-            border:#1DB954;
+            border: 5px solid#1DB954;
             width: 100%;
             border-radius: 10px;
             margin-bottom: 10px;
         }
         .recently-skipped .song-name {
-            border-width: 5px;
-            border: #FAF;
+            border: 5px solid #FAF;
             font-size: 14px;
             font-weight: bold;
         }
@@ -91,8 +83,7 @@
             cursor: pointer;
         }
         .play-button {
-            border: #FAF;
-            border-width: 5px;
+            border: 5px solid #FAF;
             color: #1DB954;
         }
     </style>
