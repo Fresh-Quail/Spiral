@@ -22,7 +22,23 @@ app.use(cors(corsOptions));
 var access_token = null;
 var refresh_token;
 
-scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state';
+const refresh_access_token = async () => {
+    const response = await axios.post('https://accounts.spotify.com/api/token',
+        {
+            client_id: client_id,
+            grant_type: 'refresh_token',
+            refresh_token: refresh_token,
+        },
+        {
+            headers: {
+                'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64')),
+                'content-type': 'application/x-www-form-urlencoded'
+            }
+        }
+    );
+    console.log("Refreshed token");
+    return response;
+}
 
 app.get('/authorize', async (req, res, next) => {
     authUrl = 'https://accounts.spotify.com/authorize?' +
@@ -106,9 +122,11 @@ app.get('/current-track', async (req, res) => {
             console.log("Rate limited");
         else if (err.status == 401){
             console.log('Bad or expired token');
+            if(access_token != null) access_token = (await refresh_access_token()).data.access_token;
         }
         else
-            console.log("No track is playing.", err.status)}
+            console.log("No track is playing.", err)
+    }
 });
 
 app.get('/skip', async (req, res) => {   
