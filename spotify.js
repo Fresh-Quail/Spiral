@@ -1,26 +1,37 @@
 require('dotenv').config();
 require('fs');
 const express = require('express');
-const path = require('path');
 const axios = require('axios');
 const qs = require('querystring');
+const fs = require('fs');
+const parser = require('csv-parser');
+
+scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state';
+
 const app = express();
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirect_uri = process.env.SPOTIFY_REDIRECT_URI
+const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
+const mal_client_id = process.env.MAL_CLIENT_ID;
+const mal_client_secret = process.env.MAL_CLIENT_SECRET;
+const mal_redirect_uri = process.env.MAL_REDIRECT_URI
 const port = process.env.SERVER;
 
 const cors = require('cors');
-const corsOptions = {
+const cors_options = {
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   };
-app.use(cors(corsOptions));
+app.use(cors(cors_options));
 
 var access_token = null;
 var refresh_token;
+var user_name = 'Ash57';
+var csvData = {};
+var inList = {};
+var notInList = {};
 
 const refresh_access_token = async () => {
     const response = await axios.post('https://accounts.spotify.com/api/token',
@@ -38,6 +49,48 @@ const refresh_access_token = async () => {
     );
     console.log("Refreshed token");
     return response;
+}
+
+const get_user_anime_list = async () => {
+    try {
+        const response = await axios.get(`https://api.myanimelist.net/v2/users/${user_name}/animelist?limit=1000&&nsfw=1&status=completed`,
+            {
+               headers: 
+               {
+                'X-MAL-CLIENT-ID': mal_client_id 
+               }
+            }
+        );
+
+        // Reads csv on disk out to csvData
+        const create_csv = new Promise((resolve) => {
+            fs.createReadStream('animedb')
+            .pipe(parser({delimiter: ','}))
+            .on('data', function(csvrow) {
+                // console.log(csvrow.Song);
+                csvData[csvrow.Song]= csvrow;        
+            })
+            // For each anime, checks if it exists in the anime database
+            .on('end',function() {
+                response.data.data.forEach((anime) => {
+                    var bool = false
+                    Object.values(csvData).forEach((musiclist) => {
+                        if(musiclist.Title == anime.node.title && !bool){
+                            bool = true
+                            inList[anime.node.title] = true
+                        }
+                    })
+                    if(!bool) {
+                        notInList[anime.node.title] = true
+                    }
+                })
+                resolve(csvData)
+            })
+        });
+        return response, create_csv;
+    } catch (error) {
+        console.error('Error fetching access token:', error);
+    }
 }
 
 app.get('/authorize', async (req, res, next) => {
@@ -97,7 +150,6 @@ app.get('/playback', (req, res) => {
       };
       // use the access token to access the Spotify Web API
       axios.get('https://api.spotify.com/v1/me/player', options).then(res => console.log('Response Data:', res.data));
-      res.sendFile(path.join(__dirname, 'public', 'player.html'))
 });
 
 app.get('/current-track', async (req, res) => {   
@@ -141,10 +193,11 @@ app.get('/skip', async (req, res) => {
     );
 });
 
-
-app.listen(port, (error) =>{
+app.listen(port, async(error) => {
     if(!error){
         console.log("Server is Successfully Running and listening on port "+ port);
+        await get_user_anime_list()
+        console.log(csvData)
     }
     else 
         console.log("Error occurred, server can't start", error);
