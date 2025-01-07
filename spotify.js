@@ -5,6 +5,8 @@ const axios = require('axios');
 const qs = require('querystring');
 const fs = require('fs');
 const parser = require('csv-parser');
+const crypto = require("crypto");
+const to_csv = require('objects-to-csv');
 
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state';
 
@@ -28,7 +30,11 @@ app.use(cors(cors_options));
 
 var access_token = null;
 var refresh_token;
+var mal_access_token = null;
+var mal_refresh_token;
 var user_name = 'Ash57';
+var verifier = ''
+var challenge = ''
 var csvData = {};
 var inList = {};
 var notInList = {};
@@ -152,7 +158,7 @@ app.get('/playback', (req, res) => {
       axios.get('https://api.spotify.com/v1/me/player', options).then(res => console.log('Response Data:', res.data));
 });
 
-app.get('/current-track', async (req, res) => {   
+app.get('/check_current-track', async (req, res) => {   
     var options = {
         headers: {'Authorization': 'Bearer ' + access_token}
     };
@@ -168,6 +174,14 @@ app.get('/current-track', async (req, res) => {
             duration: response.data.item.duration_ms,
             is_playing: response.data.is_playing
         }
+        
+        if(csvData[track.title] && inList[csvData[track.title]] == undefined) {
+            await axios.post('https://api.spotify.com/v1/me/player/next', null, options).then(
+                res => {
+                    console.log('Skip Response Data:', res.data)
+                }
+            );
+        }
         res.json(track);
     } catch(err) {
         if(err.status == 429)
@@ -179,18 +193,6 @@ app.get('/current-track', async (req, res) => {
         else
             console.log("No track is playing.", err)
     }
-});
-
-app.get('/skip', async (req, res) => {   
-    var options = {
-        headers: {'Authorization': 'Bearer ' + access_token}
-    };
-    
-    axios.post('https://api.spotify.com/v1/me/player/next', null, options).then(
-        res => {
-            console.log('Response Data:', res.data)
-        }
-    );
 });
 
 app.listen(port, async(error) => {

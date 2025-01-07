@@ -14,7 +14,7 @@ function Player() {
   useEffect(() => {
     const fetchSongData = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/current-track')//.then(res => console.log(res.data));
+        const response = await axios.get('http://localhost:5000/check_current-track')//.then(res => console.log(res.data));
         setSong({
           title: response.data.title,
           artist: response.data.artists[0],
