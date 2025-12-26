@@ -10,8 +10,11 @@ function App() {
     const authorize = async() => {
       const response = await axios.get('http://localhost:5000/authorize');
       console.log(response.data)
-      if(!response.data.authorized)
+      // Is this legal? Is there a better way of doing this?
+      if(!response.data.authorized){
+        console.log("Using hyperlink as a shortcut stopgap")
         window.location.href = response.data.url;
+      }
   };
   authorize();
   }, []);

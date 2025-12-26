@@ -30,10 +30,10 @@ function Player() {
     console.log(song)
 
     // Polling every 1 second to fetch updated song data
-    const interval = setInterval(fetchSongData, 1000);
+    const interval = setInterval(fetchSongData, 3000);
     // Cleanup interval when component unmounts
     return () => clearInterval(interval);
-  }, []);
+  }, [song]);
 
   return (
     <div className="center-container">
@@ -41,8 +41,8 @@ function Player() {
     
     <div className="song-info">
         <h3 id="song-name">{song.title}</h3>
-        <p id="artist-name">{song.artist}</p>
         <p id="album-name">{song.album}</p>
+        <p id="artist-name">{song.artist}</p>
     </div>
 
     <ProgressBar progress={song.progress} duration={song.duration}/>

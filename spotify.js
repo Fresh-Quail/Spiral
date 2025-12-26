@@ -15,8 +15,8 @@ const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
 const mal_client_id = process.env.MAL_CLIENT_ID;
-const mal_client_secret = process.env.MAL_CLIENT_SECRET;
-const mal_redirect_uri = process.env.MAL_REDIRECT_URI
+// const mal_client_secret = process.env.MAL_CLIENT_SECRET;
+// const mal_redirect_uri = process.env.MAL_REDIRECT_URI
 const port = process.env.SERVER;
 
 const cors = require('cors');
@@ -30,11 +30,11 @@ app.use(cors(cors_options));
 
 var access_token = null;
 var refresh_token;
-var mal_access_token = null;
-var mal_refresh_token;
 var user_name = 'Ash57';
-var verifier = ''
-var challenge = ''
+// var mal_access_token = null;
+// var mal_refresh_token;
+// var verifier = ''
+// var challenge = ''
 var csvData = {};
 var inList = {};
 var notInList = {};
@@ -86,11 +86,12 @@ const get_user_anime_list = async () => {
                             inList[anime.node.title] = true
                         }
                     })
+                    // MAYBE UNNECESSARY - Not used
                     if(!bool) {
                         notInList[anime.node.title] = true
                     }
                 })
-                resolve(csvData)
+                resolve(csvData)    // MAYBE UNNECESSARY
             })
         });
         return response, create_csv;
@@ -133,6 +134,8 @@ app.get('/callback', async (req, res) => {
         refresh_token = response.data.refresh_token;
         console.log(`Access Token: ${access_token}`);
         console.log(`Refresh Token: ${refresh_token}`);
+        console.log("Basic Auth: ", new Buffer.from(client_id + ':' + client_secret).toString('base64'))
+        
         res.redirect('http://localhost:3000/' //+
             // qs.stringify({
             //     access_token: access_token,
@@ -175,6 +178,7 @@ app.get('/check_current-track', async (req, res) => {
             is_playing: response.data.is_playing
         }
         
+        // TODO
         if(csvData[track.title] && inList[csvData[track.title]] == undefined) {
             await axios.post('https://api.spotify.com/v1/me/player/next', null, options).then(
                 res => {
@@ -184,24 +188,133 @@ app.get('/check_current-track', async (req, res) => {
         }
         res.json(track);
     } catch(err) {
-        if(err.status == 429)
+        if(err.status == 429){
             console.log("Rate limited");
+            console.log(err);
+        }
         else if (err.status == 401){
-            console.log('Bad or expired token');
+            console.log('Bad or expired token', refresh_token);
             if(access_token != null) access_token = (await refresh_access_token()).data.access_token;
         }
         else
-            console.log("No track is playing.", err)
+            console.log("No track is playing.", track, err)
     }
+});
+
+app.get('/add-to-queue', async (req, res) => {   
+    var options = {
+        headers: {'Authorization': 'Bearer ' + access_token},
+        'Content-Type': 'application/json'
+    };
+
+    // MAYBE FIX - Taking from currently playing intead of skipped song list?
+    const response = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', options);
+    console.log(response.data.item.uri);
+    var options = {
+        headers: {'Authorization': 'Bearer ' + access_token},
+        'Content-Type': 'application/json'
+    };
+    axios.post('https://api.spotify.com/v1//me/player/queue', {uri: response.data.item.uri}, options)
+});
+
+app.post('/play', async (req, res) => {   
+    var options = {
+        headers: {'Authorization': 'Bearer ' + access_token}
+    };
+    
+    const response = await axios.put('https://api.spotify.com/v1/me/player/play', options);
+    axios.post('https://api.spotify.com/v1//me/player/queue', {uri: response.data.item.uri}, options);
 });
 
 app.listen(port, async(error) => {
     if(!error){
         console.log("Server is Successfully Running and listening on port "+ port);
         await get_user_anime_list()
-        console.log(csvData)
+        // console.log(csvData)
     }
     else 
         console.log("Error occurred, server can't start", error);
     }
 );
+
+// function generateRandomString() {
+//     return crypto.randomBytes(50)
+//     .toString('base64')
+//     .replace(/\+/g, '-')
+//     .replace(/\//g, '_')
+//     .replace(/=/g, '');
+// }
+  
+// async function challenge_from_verifier(verifier) {
+//     return crypto
+//     .createHash('sha256')
+//     .update((verifier)).digest('base64')
+//     .replace(/\+/g, '-')
+//     .replace(/\//g, '_')
+//     .replace(/=/g, '');
+// }
+
+// const test = async () => {
+//     verifier = generateRandomString()
+//     challenge = await challenge_from_verifier(verifier)
+//     try {
+//         const response = await axios.get('https://myanimelist.net/v1/oauth2/authorize?' +
+//             qs.stringify({
+//                 response_type: 'code',
+//                 client_id: mal_client_id,
+//                 redirect_uri: mal_redirect_uri,
+//                 code_challenge: challenge,
+//                 code_challenge_method: 'plain'
+//             })
+//         );
+//         console.log(response.data)
+//     } catch (error) {
+//         console.error('Error fetching authorization code:', error);
+//         console.log(challenge)
+//     }
+// }
+
+// app.get('/mal_authorize', async (req, res, next) => {
+//     verifier = generateRandomString()
+//     challenge = await challenge_from_verifier(verifier)
+//     try {
+//         res.redirect('https://myanimelist.net/v1/oauth2/authorize?' +
+//             qs.stringify({
+//                 response_type: 'code',
+//                 client_id: mal_client_id,
+//                 redirect_uri: mal_redirect_uri,
+//                 code_challenge: challenge,
+//                 code_challenge_method: 'plain'
+//             })
+//         );
+//     } catch (error) {
+//         console.error('Error fetching authorization code:', error);
+//         console.log(challenge);
+//     }
+// })
+
+// app.get('/mal_callback', async (req, res, next) => {
+//     const authCode = req.query.code;
+//     try {
+//         const response = await axios.post('https://myanimelist.net/v1/oauth2/token',
+//             {
+//                 client_id: mal_client_id,
+//                 grant_type: 'authorization_code',
+//                 code: authCode,
+//                 redirect_uri: mal_redirect_uri,
+//                 code_verifier: challenge
+//             },
+//             {
+//                 headers: {
+//                     'Authorization': 'Basic ' + (new Buffer.from(mal_client_id + ':' + mal_client_secret).toString('base64')),
+//                     'content-type': 'application/x-www-form-urlencoded'
+//                 }
+//             }
+//         );
+        
+//         mal_access_token = response.data.access_token;
+//         mal_refresh_token = response.data.refresh_token;
+//     } catch (error) {
+//         console.error('Error fetching access token.', error.response.data);
+//     }
+// });
